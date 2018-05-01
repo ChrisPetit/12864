@@ -192,6 +192,10 @@ import math              # It will only be used in the examples of drawing circl
 import random            # It is used only in the indices for generating random coordinates
 import subprocess
 import sys
+import json
+import requests
+
+api_url = 'http://localhost/admin/api.php'
 
 # This 3x5 font wasn't present on the original code.
 # Based on this font: https://robey.lag.net/2010/01/23/tiny-monospace-font.html
@@ -371,41 +375,72 @@ def main():
     while True:
     # Shell scripts for system monitoring from here : https://unix.stackexchange.com/questions/119126/command-to-display-memory-usage-disk-usage-and-cpu-load
         #cmd = "hostname -I | cut -d\' \' -f1"
-        cmd = "hostname -I | cut -f1"
+        cmd = "hostname -I | cut -d\' \' -f1 | tr '\n' ' '"
+        #cmd = "hostname -I | cut -f1"
         IP = subprocess.check_output(cmd, shell = True )
+        # cmd = "hostname"
+        cmd = "hostname | tr '\n' ' '"
+        HOST = subprocess.check_output(cmd, shell = True )
         cmd = "top -bn1 | grep load | awk '{printf \"CPU Load: %.2f\", $(NF-2)}'"
         CPU = subprocess.check_output(cmd, shell = True )
+        # cmd = "/opt/vc/bin/vcgencmd measure_temp | awk -F = '{print $2}'"
+        cmd = "/opt/vc/bin/vcgencmd measure_temp | awk -F = '{print $2}' | tr '\n' ' '"
+        TEMP1 = subprocess.check_output(cmd, shell = True )
         cmd = "free -m | awk 'NR==2{printf \"Mem: %s/%sMB %.2f%%\", $3,$2,$3*100/$2 }'"
         MemUsage = subprocess.check_output(cmd, shell = True )
         cmd = "df -h | awk '$NF==\"/\"{printf \"Disk: %d/%dGB %s\", $3,$2,$5}'"
         Disk = subprocess.check_output(cmd, shell = True )
 
+        # Pi Hole data!
+        try:
+            r = requests.get(api_url)
+            data = json.loads(r.text)
+            DNSQUERIES = data['dns_queries_today']
+            ADSBLOCKED = data['ads_blocked_today']
+            CLIENTS = data['unique_clients']
+        except:
+            time.sleep(1)
+            continue
+        '''    
+        print("IP: "+str(IP)+" "+str(HOST))
+        print(str(CPU )+" T: "+str(TEMP1))
+        print(str(MemUsage))
+        print(str(Disk))
+        print("Ads Blocked: " + str(ADSBLOCKED))
+        print("Clients:     " + str(CLIENTS))
+        print("DNS Queries: " + str(DNSQUERIES))
+        '''
+
         # Write two lines of text.
         
         initGraphicMode()
-        printString3x5("IP: "+str(IP), 0, 0, rotation = 0, use_memPlot = 0)
+        # IP and Hostname
+        printString3x5("IP: "+str(IP)+" "+str(HOST)+" ", 0, 0, rotation = 0, use_memPlot = 0)
         
         drawHorizontalLine(7, 0, 128, 1, 0)
-        
-        printString3x5(str(CPU), 0, 10, rotation = 0, use_memPlot = 0)
-        
+        # CPU and Temp 
+        printString3x5(str(CPU )+" T: "+str(TEMP1), 0, 10, rotation = 0, use_memPlot = 0)
+        # mem usage
         printString3x5(str(MemUsage), 0, 17, rotation = 0, use_memPlot = 0)
-        
+        # disk usage
         printString3x5(str(Disk), 0, 24, rotation = 0, use_memPlot = 0)
+
+        drawHorizontalLine(31, 0, 128, 1, 0)
+        # PIhole data
+        printString3x5("Ads Blocked: " + str(ADSBLOCKED), 0, 34, rotation = 0, use_memPlot = 0)
+        printString3x5("Clients:     " + str(CLIENTS), 0, 41, rotation = 0, use_memPlot = 0)
+        printString3x5("DNS Queries: " + str(DNSQUERIES), 0, 48, rotation = 0, use_memPlot = 0)
+        '''
         statvfs = os.statvfs('/')
         grootte = statvfs.f_frsize * statvfs.f_blocks
         vrij = statvfs.f_frsize * statvfs.f_bfree
-        #print(grootte)
-        #print(vrij)
-        
         flap = vrij / (grootte / 100)
-        #print(flap)
         hoek = flap * 3.6
         hoek = int(hoek)
         drawCircle(100, 20, 10, startDegree = 0 , stopDegree = hoek, stepDegree = 1, style = 1, use_memPlot = 0)
         drawCircle(100, 20, 9, startDegree = 0 , stopDegree = hoek, stepDegree = 1, style = 1, use_memPlot = 0)
         drawCircle(100, 20, 8, startDegree = 0 , stopDegree = hoek, stepDegree = 1, style = 1, use_memPlot = 0)
-
+        '''
         
         
         time.sleep(.1)
